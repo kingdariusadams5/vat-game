@@ -7,7 +7,7 @@
 
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     text-align: center;
     background: linear-gradient(135deg,#0b3d91,#1452cc);
     color: white;
@@ -19,9 +19,7 @@ body {
     padding:10px;
 }
 
-.logo {
-    width:70px;
-}
+.logo { width:70px; }
 
 .grid {
     display:grid;
@@ -53,24 +51,13 @@ body {
     background:#002b7f;
     padding:10px;
     border-radius:10px;
-    display:inline-block;
 }
 
 #submitBox { display:none; margin-top:20px; }
 
-input {
-    padding:10px;
-    width:220px;
-    border-radius:6px;
-    border:none;
-}
+input { padding:10px; width:220px; border-radius:6px; border:none; }
 
-button {
-    padding:10px 20px;
-    background:orange;
-    border:none;
-    border-radius:6px;
-}
+button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 
 #leaderboard {
     margin:20px auto;
@@ -86,19 +73,11 @@ button {
     display:flex;
     justify-content:space-between;
     padding:6px;
-    border-bottom:1px solid #ddd;
 }
 
-@media (max-width:600px){
-    .grid{
-        grid-template-columns:repeat(12,24px);
-        gap:3px;
-    }
-    .cell{
-        width:24px;
-        height:24px;
-        font-size:12px;
-    }
+@media(max-width:600px){
+.grid{grid-template-columns:repeat(12,24px);}
+.cell{width:24px;height:24px;font-size:12px;}
 }
 </style>
 </head>
@@ -118,29 +97,31 @@ button {
 
 <div class="grid" id="grid"></div>
 
-<p>Find: VAT, TAX, GOODS, SERVICES, INVOICE, REVENUE, PAYMENT, REGISTER, SALES, CUSTOMER</p>
-
 <div id="submitBox">
 <input id="name" placeholder="Full Name"><br><br>
-<input id="phone" placeholder="Phone Number"><br><br>
+<input id="phone" placeholder="Phone"><br><br>
 <button onclick="submitScore()">Submit</button>
 </div>
 
-<!-- 🔒 HIDDEN ADMIN -->
-<div id="adminBox" style="display:none; background:#fff; color:#000; padding:10px; border-radius:10px; max-width:300px; margin:20px auto;">
-<h4>Admin Verify</h4>
+<div id="leaderboard">
+<h3>🏆 Top Players</h3>
+<div id="boardList"></div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminBox" style="display:none;background:#fff;color:#000;padding:10px;margin:20px;">
 <input id="codeInput" placeholder="Paste Code"><br><br>
 <button onclick="verifyCode()">Verify</button>
 <p id="result"></p>
 </div>
 
 <script>
-const correctSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-const wrongSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const correctSound=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+const wrongSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
 const words=["VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER","SALES","CUSTOMER"];
 
-const letters=[ /* unchanged */
+const letters=[ /* same letters */ 
 "C","U","S","T","O","M","E","R","X","Y","Z","A",
 "R","T","X","A","T","G","H","J","K","L","M","N",
 "E","V","A","T","O","P","Q","R","S","T","U","V",
@@ -155,19 +136,12 @@ const letters=[ /* unchanged */
 "O","L","K","J","H","G","F","D","S","A","E","L"
 ];
 
-let score=0, attempts=10, found=[], selected=[];
-let isDragging=false;
-let gameOver=false;
+let score=0,attempts=10,found=[],selected=[],drag=false,gameOver=false;
 
-// TIMER
 let time=0;
-setInterval(()=>{
- if(!gameOver){
-  time++;
-  document.getElementById("time").innerText=time;
- }
-},1000);
+setInterval(()=>{if(!gameOver){time++;timeEl.innerText=time}},1000);
 
+const timeEl=document.getElementById("time");
 const grid=document.getElementById("grid");
 
 letters.forEach(l=>{
@@ -175,68 +149,42 @@ letters.forEach(l=>{
  c.className="cell";
  c.innerText=l;
 
- c.onmousedown=()=>{if(!gameOver){isDragging=true;select(c)}};
- c.onmouseover=()=>{if(isDragging && !gameOver)select(c)};
+ c.onmousedown=()=>{if(!gameOver){drag=true;select(c)}};
+ c.onmouseover=()=>{if(drag&&!gameOver)select(c)};
  document.onmouseup=check;
 
- c.ontouchstart=(e)=>{
-   if(gameOver) return;
-   e.preventDefault();
-   isDragging=true;
-   select(c);
- };
-
- c.ontouchmove=(e)=>{
-   if(gameOver) return;
-   let t=e.touches[0];
-   let el=document.elementFromPoint(t.clientX,t.clientY);
-   if(el && el.classList.contains("cell")){
-     select(el);
-   }
- };
-
+ c.ontouchstart=(e)=>{if(gameOver)return;e.preventDefault();drag=true;select(c)};
+ c.ontouchmove=(e)=>{if(gameOver)return;let t=e.touches[0];let el=document.elementFromPoint(t.clientX,t.clientY);if(el&&el.classList.contains("cell"))select(el)};
  document.ontouchend=check;
 
  grid.appendChild(c);
 });
 
-function select(cell){
- if(!cell.classList.contains("selected")){
-  cell.classList.add("selected");
-  selected.push(cell);
+function select(c){
+ if(!c.classList.contains("selected")){
+  c.classList.add("selected");
+  selected.push(c);
  }
 }
 
 function check(){
  if(gameOver) return;
-
- isDragging=false;
+ drag=false;
  if(selected.length===0) return;
-
- if(attempts <= 0){
-    endGame();
-    return;
- }
 
  let word=selected.map(c=>c.innerText).join("");
 
  attempts--;
- if(attempts < 0) attempts = 0;
-
+ if(attempts<0) attempts=0;
  document.getElementById("attempts").innerText=attempts;
 
- if(words.includes(word) && !found.includes(word)){
+ if(words.includes(word)&&!found.includes(word)){
   found.push(word);
   score+=10;
   document.getElementById("score").innerText=score;
   correctSound.play();
-
-  selected.forEach(c=>{
-   c.classList.remove("selected");
-   c.classList.add("found");
-  });
-
- } else {
+  selected.forEach(c=>{c.classList.remove("selected");c.classList.add("found")});
+ }else{
   wrongSound.play();
   selected.forEach(c=>c.classList.add("wrong"));
   setTimeout(()=>selected.forEach(c=>c.classList.remove("selected","wrong")),400);
@@ -244,17 +192,12 @@ function check(){
 
  selected=[];
 
- if(found.length===words.length || attempts === 0){
-  endGame();
+ if(found.length===words.length||attempts===0){
+  gameOver=true;
+  document.getElementById("submitBox").style.display="block";
  }
 }
 
-function endGame(){
- gameOver = true;
- document.getElementById("submitBox").style.display="block";
-}
-
-/* 🔒 CODE */
 function generateCode(){
  return btoa(score+"-"+time+"-"+attempts);
 }
@@ -264,6 +207,15 @@ function submitScore(){
  let phone=document.getElementById("phone").value;
 
  let code=generateCode();
+
+ let board=JSON.parse(localStorage.getItem("board")||"[]");
+
+ board.push({name,score,time});
+ board.sort((a,b)=>b.score-a.score||a.time-b.time);
+
+ localStorage.setItem("board",JSON.stringify(board));
+
+ showBoard();
 
  let msg=`VAT Game Result:
 Name:${name}
@@ -275,29 +227,34 @@ Code:${code}`;
  window.open(`https://wa.me/231777136993?text=${encodeURIComponent(msg)}`);
 }
 
-/* 🔐 ADMIN ACCESS */
-document.addEventListener("keydown", function(e){
- if(e.ctrlKey && e.key === "a"){
-  let pass = prompt("Enter Admin Key");
-  if(pass === "admin123"){
-    document.getElementById("adminBox").style.display="block";
-  }
- }
-});
+function showBoard(){
+ let board=JSON.parse(localStorage.getItem("board")||"[]");
 
-/* 🔍 VERIFY */
+ let html="";
+ board.forEach((p,i)=>{
+  let medal=i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
+  html+=`<div class="player">${medal} ${p.name} - ${p.score}% (${p.time}s)</div>`;
+ });
+
+ document.getElementById("boardList").innerHTML=html;
+}
+
+// admin access
+if(location.search.includes("admin=1")){
+ document.getElementById("adminBox").style.display="block";
+}
+
 function verifyCode(){
  let code=document.getElementById("codeInput").value;
-
  try{
-  let decoded=atob(code);
-  let parts=decoded.split("-");
-  document.getElementById("result").innerText =
-   "Score: "+parts[0]+" | Time: "+parts[1]+"s | Attempts left: "+parts[2];
+  let d=atob(code).split("-");
+  document.getElementById("result").innerText=`Score:${d[0]} Time:${d[1]} Attempts:${d[2]}`;
  }catch{
-  document.getElementById("result").innerText="Invalid Code!";
+  document.getElementById("result").innerText="Invalid";
  }
 }
+
+showBoard();
 </script>
 
 </body>
