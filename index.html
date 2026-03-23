@@ -71,6 +71,13 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
     padding:6px;
 }
 
+/* 🔥 WORD LIST STYLE */
+#wordList {
+    margin-top:10px;
+    font-weight:bold;
+    padding:10px;
+}
+
 @media(max-width:600px){
 .grid{grid-template-columns:repeat(12,24px);}
 .cell{width:24px;height:24px;font-size:12px;}
@@ -93,6 +100,9 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 
 <div class="grid" id="grid"></div>
 
+<!-- 🔥 WORD LIST -->
+<p id="wordList"></p>
+
 <div id="submitBox">
 <input id="name" placeholder="Full Name"><br><br>
 <input id="phone" placeholder="Phone"><br><br>
@@ -104,7 +114,7 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 <div id="boardList"></div>
 </div>
 
-<!-- 🔐 ADMIN -->
+<!-- ADMIN -->
 <div id="adminBox" style="display:none;background:#fff;color:#000;padding:10px;margin:20px;">
 <input id="codeInput" placeholder="Paste Code"><br><br>
 <button onclick="verifyCode()">Verify</button>
@@ -115,44 +125,95 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 const correctSound=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
 const wrongSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
-const words=["VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER","SALES","CUSTOMER"];
-
-const letters=[
-"C","U","S","T","O","M","E","R","X","Y","Z","A",
-"R","T","X","A","T","G","H","J","K","L","M","N",
-"E","V","A","T","O","P","Q","R","S","T","U","V",
-"C","W","X","Y","Z","G","O","O","D","S","A","B",
-"E","R","T","Y","U","I","O","P","Q","R","C","D",
-"I","N","V","O","I","C","E","L","M","N","E","F",
-"P","O","I","U","Y","T","R","E","W","Q","I","G",
-"T","R","E","G","I","S","T","E","R","H","V","H",
-"S","A","L","E","S","D","F","G","H","I","R","I",
-"E","D","C","B","A","Z","X","C","V","B","O","J",
-"M","N","O","P","A","Y","M","E","N","T","K","K",
-"O","L","K","J","H","G","F","D","S","A","E","L"
+// VAT WORD BANK
+const allWords=[
+"VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER",
+"SALES","CUSTOMER","PRICE","VALUE","BUYER","SELLER","MARKET","INCOME",
+"TRADE","BILL","LEVY","DUTY","IMPORT","EXPORT","BUSINESS","PROFIT",
+"COST","ITEM","ACCOUNT","CHARGE","FEE","PURCHASE","RECEIPT","PRODUCT","CLIENT","STORE"
 ];
+
+// RANDOM WORDS
+function getWords(){
+ return allWords.sort(()=>0.5-Math.random()).slice(0,10);
+}
+
+const words=getWords();
+
+// 🔥 SHOW WORD LIST
+document.getElementById("wordList").innerText="Find: "+words.join(", ");
+
+// GRID
+const size=12;
+let gridArray=Array(size).fill().map(()=>Array(size).fill(""));
+
+const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+
+function place(word){
+ let placed=false;
+ while(!placed){
+  let d=dirs[Math.floor(Math.random()*dirs.length)];
+  let r=Math.floor(Math.random()*size);
+  let c=Math.floor(Math.random()*size);
+
+  let ok=true;
+  for(let i=0;i<word.length;i++){
+   let nr=r+d[0]*i, nc=c+d[1]*i;
+   if(nr<0||nc<0||nr>=size||nc>=size|| (gridArray[nr][nc]!=="" && gridArray[nr][nc]!==word[i])){
+    ok=false; break;
+   }
+  }
+
+  if(ok){
+   for(let i=0;i<word.length;i++){
+    let nr=r+d[0]*i, nc=c+d[1]*i;
+    gridArray[nr][nc]=word[i];
+   }
+   placed=true;
+  }
+ }
+}
+
+words.forEach(w=>place(w));
+
+const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+for(let r=0;r<size;r++){
+ for(let c=0;c<size;c++){
+  if(gridArray[r][c]==""){
+   gridArray[r][c]=letters[Math.floor(Math.random()*26)];
+  }
+ }
+}
+
+const flat=gridArray.flat();
 
 let score=0,attempts=10,found=[],selected=[],drag=false,gameOver=false;
 
+// TIMER
 let time=0;
-setInterval(()=>{ if(!gameOver){time++;document.getElementById("time").innerText=time}},1000);
+setInterval(()=>{if(!gameOver){time++;document.getElementById("time").innerText=time}},1000);
 
+// GRID RENDER
 const grid=document.getElementById("grid");
+flat.forEach(l=>{
+ let cell=document.createElement("div");
+ cell.className="cell";
+ cell.innerText=l;
 
-letters.forEach(l=>{
- let c=document.createElement("div");
- c.className="cell";
- c.innerText=l;
-
- c.onmousedown=()=>{if(!gameOver){drag=true;select(c)}};
- c.onmouseover=()=>{if(drag&&!gameOver)select(c)};
+ cell.onmousedown=()=>{if(!gameOver){drag=true;select(cell)}};
+ cell.onmouseover=()=>{if(drag&&!gameOver)select(cell)};
  document.onmouseup=check;
 
- c.ontouchstart=(e)=>{if(gameOver)return;e.preventDefault();drag=true;select(c)};
- c.ontouchmove=(e)=>{if(gameOver)return;let t=e.touches[0];let el=document.elementFromPoint(t.clientX,t.clientY);if(el&&el.classList.contains("cell"))select(el)};
+ cell.ontouchstart=(e)=>{if(gameOver)return;e.preventDefault();drag=true;select(cell)};
+ cell.ontouchmove=(e)=>{
+  if(gameOver)return;
+  let t=e.touches[0];
+  let el=document.elementFromPoint(t.clientX,t.clientY);
+  if(el && el.classList.contains("cell")) select(el);
+ };
  document.ontouchend=check;
 
- grid.appendChild(c);
+ grid.appendChild(cell);
 });
 
 function select(c){
@@ -193,10 +254,12 @@ function check(){
  }
 }
 
+// CODE
 function generateCode(){
  return btoa(score+"-"+time+"-"+attempts);
 }
 
+// SUBMIT
 function submitScore(){
  let name=document.getElementById("name").value;
  let phone=document.getElementById("phone").value;
@@ -220,31 +283,27 @@ Code:${code}`;
  window.open(`https://wa.me/231777136993?text=${encodeURIComponent(msg)}`);
 }
 
+// LEADERBOARD
 function showBoard(){
  let board=JSON.parse(localStorage.getItem("board")||"[]");
-
  let html="";
  board.forEach((p,i)=>{
   let medal=i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
   html+=`<div class="player">${medal} ${p.name} - ${p.score}% (${p.time}s)</div>`;
  });
-
  document.getElementById("boardList").innerHTML=html;
 }
 
-// 🔐 ADMIN ACCESS FIXED
+// ADMIN
 document.addEventListener("keydown", function(e){
- if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a"){
-  let pass = prompt("Enter Admin Key");
-  if(pass === "admin123"){
-    document.getElementById("adminBox").style.display="block";
-  }else{
-    alert("Wrong key");
+ if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="a"){
+  let pass=prompt("Enter Admin Key");
+  if(pass==="admin123"){
+   document.getElementById("adminBox").style.display="block";
   }
  }
 });
 
-// 📱 MOBILE ADMIN
 if(location.search.includes("admin=1")){
  document.getElementById("adminBox").style.display="block";
 }
