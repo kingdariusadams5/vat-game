@@ -14,11 +14,7 @@ body {
     margin:0;
 }
 
-.header {
-    background:#002b7f;
-    padding:10px;
-}
-
+.header { background:#002b7f; padding:10px; }
 .logo { width:70px; }
 
 .grid {
@@ -108,7 +104,7 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 <div id="boardList"></div>
 </div>
 
-<!-- ADMIN -->
+<!-- 🔐 ADMIN -->
 <div id="adminBox" style="display:none;background:#fff;color:#000;padding:10px;margin:20px;">
 <input id="codeInput" placeholder="Paste Code"><br><br>
 <button onclick="verifyCode()">Verify</button>
@@ -121,7 +117,7 @@ const wrongSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_a
 
 const words=["VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER","SALES","CUSTOMER"];
 
-const letters=[ /* same letters */ 
+const letters=[
 "C","U","S","T","O","M","E","R","X","Y","Z","A",
 "R","T","X","A","T","G","H","J","K","L","M","N",
 "E","V","A","T","O","P","Q","R","S","T","U","V",
@@ -139,9 +135,8 @@ const letters=[ /* same letters */
 let score=0,attempts=10,found=[],selected=[],drag=false,gameOver=false;
 
 let time=0;
-setInterval(()=>{if(!gameOver){time++;timeEl.innerText=time}},1000);
+setInterval(()=>{ if(!gameOver){time++;document.getElementById("time").innerText=time}},1000);
 
-const timeEl=document.getElementById("time");
 const grid=document.getElementById("grid");
 
 letters.forEach(l=>{
@@ -209,10 +204,8 @@ function submitScore(){
  let code=generateCode();
 
  let board=JSON.parse(localStorage.getItem("board")||"[]");
-
  board.push({name,score,time});
  board.sort((a,b)=>b.score-a.score||a.time-b.time);
-
  localStorage.setItem("board",JSON.stringify(board));
 
  showBoard();
@@ -239,7 +232,19 @@ function showBoard(){
  document.getElementById("boardList").innerHTML=html;
 }
 
-// admin access
+// 🔐 ADMIN ACCESS FIXED
+document.addEventListener("keydown", function(e){
+ if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "a"){
+  let pass = prompt("Enter Admin Key");
+  if(pass === "admin123"){
+    document.getElementById("adminBox").style.display="block";
+  }else{
+    alert("Wrong key");
+  }
+ }
+});
+
+// 📱 MOBILE ADMIN
 if(location.search.includes("admin=1")){
  document.getElementById("adminBox").style.display="block";
 }
