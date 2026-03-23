@@ -21,20 +21,21 @@ body {
 
 .logo {
     width:70px;
-    height:auto;
 }
 
+/* ✅ IMPROVED GRID */
 .grid {
     display:grid;
-    grid-template-columns:repeat(12,32px);
-    gap:5px;
+    grid-template-columns:repeat(12,30px);
+    gap:4px;
     justify-content:center;
     margin:15px;
 }
 
+/* ✅ CURSOR FIX + NO TEXT SELECT */
 .cell {
-    width:32px;
-    height:32px;
+    width:30px;
+    height:30px;
     background:white;
     color:black;
     display:flex;
@@ -42,6 +43,8 @@ body {
     justify-content:center;
     font-weight:bold;
     border-radius:6px;
+    cursor:pointer;
+    user-select:none;
 }
 
 .cell.selected { background: gold; }
@@ -53,7 +56,6 @@ body {
     padding:10px;
     border-radius:10px;
     display:inline-block;
-    margin-top:10px;
 }
 
 #submitBox { display:none; margin-top:20px; }
@@ -89,9 +91,18 @@ button {
     border-bottom:1px solid #ddd;
 }
 
-.gold { background:#fff4cc; }
-.silver { background:#eee; }
-.bronze { background:#ffe0cc; }
+/* 📱 MOBILE FIX */
+@media (max-width:600px){
+    .grid{
+        grid-template-columns:repeat(12,24px);
+        gap:3px;
+    }
+    .cell{
+        width:24px;
+        height:24px;
+        font-size:12px;
+    }
+}
 </style>
 </head>
 
@@ -129,7 +140,7 @@ const wrongSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang
 
 const words=["VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER","SALES","CUSTOMER"];
 
-const letters=[
+const letters=[ /* unchanged */
 "C","U","S","T","O","M","E","R","X","Y","Z","A",
 "R","T","X","A","T","G","H","J","K","L","M","N",
 "E","V","A","T","O","P","Q","R","S","T","U","V",
@@ -156,18 +167,15 @@ setInterval(()=>{
 
 const grid=document.getElementById("grid");
 
-// CREATE GRID
 letters.forEach(l=>{
  let c=document.createElement("div");
  c.className="cell";
  c.innerText=l;
 
- // DESKTOP
  c.onmousedown=()=>{isDragging=true;select(c)};
  c.onmouseover=()=>{if(isDragging)select(c)};
  document.onmouseup=check;
 
- // MOBILE
  c.ontouchstart=(e)=>{
    e.preventDefault();
    isDragging=true;
@@ -175,8 +183,8 @@ letters.forEach(l=>{
  };
 
  c.ontouchmove=(e)=>{
-   let touch = e.touches[0];
-   let el = document.elementFromPoint(touch.clientX, touch.clientY);
+   let t=e.touches[0];
+   let el=document.elementFromPoint(t.clientX,t.clientY);
    if(el && el.classList.contains("cell")){
      select(el);
    }
@@ -227,7 +235,39 @@ function check(){
  }
 }
 
-// LEADERBOARD + SUBMIT same as before
+/* 🔒 HIDDEN CODE */
+function generateCode(){
+ return btoa(score+"-"+time+"-"+attempts);
+}
+
+/* 🧠 ADMIN VERIFY */
+function decodeCode(code){
+ return atob(code);
+}
+
+function submitScore(){
+ let name=document.getElementById("name").value;
+ let phone=document.getElementById("phone").value;
+
+ let result=grade();
+ let code=generateCode();
+
+ let board=JSON.parse(localStorage.getItem("board")||"[]");
+ board.push({name,score:result.p,time});
+ localStorage.setItem("board",JSON.stringify(board));
+
+ showBoard();
+
+ let msg=`VAT Game Result:
+Name:${name}
+Phone:${phone}
+Score:${result.p}%
+Time:${time}s
+Code:${code}`;
+
+ window.open(`https://wa.me/231777136993?text=${encodeURIComponent(msg)}`);
+}
+
 function grade(){
  let p=Math.round((found.length/words.length)*100);
  return {p};
@@ -240,27 +280,6 @@ function showBoard(){
   html+=`<div class="player">${i+1}. ${p.name} - ${p.score}%</div>`;
  });
  document.getElementById("boardList").innerHTML=html;
-}
-
-function submitScore(){
- let name=document.getElementById("name").value;
- let phone=document.getElementById("phone").value;
-
- let result=grade();
-
- let board=JSON.parse(localStorage.getItem("board")||"[]");
- board.push({name,score:result.p,time});
- localStorage.setItem("board",JSON.stringify(board));
-
- showBoard();
-
- let msg=`VAT Game Result:
-Name:${name}
-Phone:${phone}
-Score:${result.p}%
-Time:${time}s`;
-
- window.open(`https://wa.me/231777136993?text=${encodeURIComponent(msg)}`);
 }
 
 showBoard();
