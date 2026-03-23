@@ -23,7 +23,6 @@ body {
     width:70px;
 }
 
-/* ✅ IMPROVED GRID */
 .grid {
     display:grid;
     grid-template-columns:repeat(12,30px);
@@ -32,7 +31,6 @@ body {
     margin:15px;
 }
 
-/* ✅ CURSOR FIX + NO TEXT SELECT */
 .cell {
     width:30px;
     height:30px;
@@ -91,7 +89,6 @@ button {
     border-bottom:1px solid #ddd;
 }
 
-/* 📱 MOBILE FIX */
 @media (max-width:600px){
     .grid{
         grid-template-columns:repeat(12,24px);
@@ -129,9 +126,12 @@ button {
 <button onclick="submitScore()">Submit</button>
 </div>
 
-<div id="leaderboard">
-<h3>🏆 Top Players</h3>
-<div id="boardList"></div>
+<!-- 🔒 HIDDEN ADMIN -->
+<div id="adminBox" style="display:none; background:#fff; color:#000; padding:10px; border-radius:10px; max-width:300px; margin:20px auto;">
+<h4>Admin Verify</h4>
+<input id="codeInput" placeholder="Paste Code"><br><br>
+<button onclick="verifyCode()">Verify</button>
+<p id="result"></p>
 </div>
 
 <script>
@@ -157,12 +157,15 @@ const letters=[ /* unchanged */
 
 let score=0, attempts=10, found=[], selected=[];
 let isDragging=false;
+let gameOver=false;
 
 // TIMER
 let time=0;
 setInterval(()=>{
- time++;
- document.getElementById("time").innerText=time;
+ if(!gameOver){
+  time++;
+  document.getElementById("time").innerText=time;
+ }
 },1000);
 
 const grid=document.getElementById("grid");
@@ -172,17 +175,19 @@ letters.forEach(l=>{
  c.className="cell";
  c.innerText=l;
 
- c.onmousedown=()=>{isDragging=true;select(c)};
- c.onmouseover=()=>{if(isDragging)select(c)};
+ c.onmousedown=()=>{if(!gameOver){isDragging=true;select(c)}};
+ c.onmouseover=()=>{if(isDragging && !gameOver)select(c)};
  document.onmouseup=check;
 
  c.ontouchstart=(e)=>{
+   if(gameOver) return;
    e.preventDefault();
    isDragging=true;
    select(c);
  };
 
  c.ontouchmove=(e)=>{
+   if(gameOver) return;
    let t=e.touches[0];
    let el=document.elementFromPoint(t.clientX,t.clientY);
    if(el && el.classList.contains("cell")){
@@ -203,12 +208,21 @@ function select(cell){
 }
 
 function check(){
+ if(gameOver) return;
+
  isDragging=false;
  if(selected.length===0) return;
+
+ if(attempts <= 0){
+    endGame();
+    return;
+ }
 
  let word=selected.map(c=>c.innerText).join("");
 
  attempts--;
+ if(attempts < 0) attempts = 0;
+
  document.getElementById("attempts").innerText=attempts;
 
  if(words.includes(word) && !found.includes(word)){
@@ -230,59 +244,60 @@ function check(){
 
  selected=[];
 
- if(found.length===words.length || attempts===0){
-  document.getElementById("submitBox").style.display="block";
+ if(found.length===words.length || attempts === 0){
+  endGame();
  }
 }
 
-/* 🔒 HIDDEN CODE */
-function generateCode(){
- return btoa(score+"-"+time+"-"+attempts);
+function endGame(){
+ gameOver = true;
+ document.getElementById("submitBox").style.display="block";
 }
 
-/* 🧠 ADMIN VERIFY */
-function decodeCode(code){
- return atob(code);
+/* 🔒 CODE */
+function generateCode(){
+ return btoa(score+"-"+time+"-"+attempts);
 }
 
 function submitScore(){
  let name=document.getElementById("name").value;
  let phone=document.getElementById("phone").value;
 
- let result=grade();
  let code=generateCode();
-
- let board=JSON.parse(localStorage.getItem("board")||"[]");
- board.push({name,score:result.p,time});
- localStorage.setItem("board",JSON.stringify(board));
-
- showBoard();
 
  let msg=`VAT Game Result:
 Name:${name}
 Phone:${phone}
-Score:${result.p}%
+Score:${score}
 Time:${time}s
 Code:${code}`;
 
  window.open(`https://wa.me/231777136993?text=${encodeURIComponent(msg)}`);
 }
 
-function grade(){
- let p=Math.round((found.length/words.length)*100);
- return {p};
-}
+/* 🔐 ADMIN ACCESS */
+document.addEventListener("keydown", function(e){
+ if(e.ctrlKey && e.key === "a"){
+  let pass = prompt("Enter Admin Key");
+  if(pass === "admin123"){
+    document.getElementById("adminBox").style.display="block";
+  }
+ }
+});
 
-function showBoard(){
- let board=JSON.parse(localStorage.getItem("board")||"[]");
- let html="";
- board.forEach((p,i)=>{
-  html+=`<div class="player">${i+1}. ${p.name} - ${p.score}%</div>`;
- });
- document.getElementById("boardList").innerHTML=html;
-}
+/* 🔍 VERIFY */
+function verifyCode(){
+ let code=document.getElementById("codeInput").value;
 
-showBoard();
+ try{
+  let decoded=atob(code);
+  let parts=decoded.split("-");
+  document.getElementById("result").innerText =
+   "Score: "+parts[0]+" | Time: "+parts[1]+"s | Attempts left: "+parts[2];
+ }catch{
+  document.getElementById("result").innerText="Invalid Code!";
+ }
+}
 </script>
 
 </body>
