@@ -71,11 +71,10 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
     padding:6px;
 }
 
-/* 🔥 WORD LIST STYLE */
+/* WORD LIST */
 #wordList {
     margin-top:10px;
     font-weight:bold;
-    padding:10px;
 }
 
 @media(max-width:600px){
@@ -100,7 +99,6 @@ button { padding:10px 20px; background:orange; border:none; border-radius:6px; }
 
 <div class="grid" id="grid"></div>
 
-<!-- 🔥 WORD LIST -->
 <p id="wordList"></p>
 
 <div id="submitBox">
@@ -140,13 +138,21 @@ function getWords(){
 
 const words=getWords();
 
-// 🔥 SHOW WORD LIST
-document.getElementById("wordList").innerText="Find: "+words.join(", ");
+// 🔥 WORD LIST RENDER
+const wordListEl=document.getElementById("wordList");
+
+function renderWordList(){
+ let html="Find: ";
+ words.forEach(w=>{
+  html+=`<span id="w-${w}" style="margin:6px;">${w}</span>`;
+ });
+ wordListEl.innerHTML=html;
+}
+renderWordList();
 
 // GRID
 const size=12;
 let gridArray=Array(size).fill().map(()=>Array(size).fill(""));
-
 const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
 
 function place(word){
@@ -159,7 +165,7 @@ function place(word){
   let ok=true;
   for(let i=0;i<word.length;i++){
    let nr=r+d[0]*i, nc=c+d[1]*i;
-   if(nr<0||nc<0||nr>=size||nc>=size|| (gridArray[nr][nc]!=="" && gridArray[nr][nc]!==word[i])){
+   if(nr<0||nc<0||nr>=size||nc>=size||(gridArray[nr][nc]!==""&&gridArray[nr][nc]!==word[i])){
     ok=false; break;
    }
   }
@@ -239,7 +245,19 @@ function check(){
   score+=10;
   document.getElementById("score").innerText=score;
   correctSound.play();
-  selected.forEach(c=>{c.classList.remove("selected");c.classList.add("found")});
+
+  selected.forEach(c=>{
+   c.classList.remove("selected");
+   c.classList.add("found");
+  });
+
+  // 🔥 HIGHLIGHT WORD
+  let el=document.getElementById("w-"+word);
+  if(el){
+    el.style.color="lime";
+    el.style.fontWeight="bold";
+  }
+
  }else{
   wrongSound.play();
   selected.forEach(c=>c.classList.add("wrong"));
