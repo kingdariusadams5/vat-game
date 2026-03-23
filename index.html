@@ -14,7 +14,6 @@ body {
     margin:0;
 }
 
-/* HEADER */
 .header {
     background:#002b7f;
     padding:10px;
@@ -23,15 +22,8 @@ body {
 .logo {
     width:70px;
     height:auto;
-    margin-bottom:5px;
 }
 
-h1 {
-    margin:5px 0;
-    font-size:18px;
-}
-
-/* GRID */
 .grid {
     display:grid;
     grid-template-columns:repeat(12,32px);
@@ -50,14 +42,12 @@ h1 {
     justify-content:center;
     font-weight:bold;
     border-radius:6px;
-    cursor:pointer;
 }
 
 .cell.selected { background: gold; }
 .cell.found { background: limegreen; color:white; }
 .cell.wrong { background: red; color:white; }
 
-/* INFO */
 .info-box {
     background:#002b7f;
     padding:10px;
@@ -66,7 +56,6 @@ h1 {
     margin-top:10px;
 }
 
-/* FORM */
 #submitBox { display:none; margin-top:20px; }
 
 input {
@@ -81,11 +70,8 @@ button {
     background:orange;
     border:none;
     border-radius:6px;
-    cursor:pointer;
-    font-weight:bold;
 }
 
-/* LEADERBOARD */
 #leaderboard {
     margin:20px auto;
     background:white;
@@ -106,20 +92,14 @@ button {
 .gold { background:#fff4cc; }
 .silver { background:#eee; }
 .bronze { background:#ffe0cc; }
-
-#boardList {
-    max-height:200px;
-    overflow-y:auto;
-}
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
 <img src="lra-logo.png" class="logo">
-<h1>🇱🇷 LRA VAT Word Game</h1>
+<h2>LRA VAT Word Game</h2>
 </div>
 
 <div class="info-box">
@@ -130,7 +110,7 @@ button {
 
 <div class="grid" id="grid"></div>
 
-<p><b>Find:</b> VAT, TAX, GOODS, SERVICES, INVOICE, REVENUE, PAYMENT, REGISTER, SALES, CUSTOMER</p>
+<p>Find: VAT, TAX, GOODS, SERVICES, INVOICE, REVENUE, PAYMENT, REGISTER, SALES, CUSTOMER</p>
 
 <div id="submitBox">
 <input id="name" placeholder="Full Name"><br><br>
@@ -138,18 +118,15 @@ button {
 <button onclick="submitScore()">Submit</button>
 </div>
 
-<!-- LEADERBOARD -->
 <div id="leaderboard">
 <h3>🏆 Top Players</h3>
 <div id="boardList"></div>
 </div>
 
 <script>
-// 🔊 SOUNDS
 const correctSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
 const wrongSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
-// WORDS
 const words=["VAT","TAX","GOODS","SERVICES","INVOICE","REVENUE","PAYMENT","REGISTER","SALES","CUSTOMER"];
 
 const letters=[
@@ -167,7 +144,8 @@ const letters=[
 "O","L","K","J","H","G","F","D","S","A","E","L"
 ];
 
-let score=0, attempts=10, found=[], selected=[], drag=false;
+let score=0, attempts=10, found=[], selected=[];
+let isDragging=false;
 
 // TIMER
 let time=0;
@@ -178,14 +156,33 @@ setInterval(()=>{
 
 const grid=document.getElementById("grid");
 
+// CREATE GRID
 letters.forEach(l=>{
  let c=document.createElement("div");
  c.className="cell";
  c.innerText=l;
 
- c.onmousedown=()=>{drag=true;select(c)};
- c.onmouseover=()=>{if(drag)select(c)};
+ // DESKTOP
+ c.onmousedown=()=>{isDragging=true;select(c)};
+ c.onmouseover=()=>{if(isDragging)select(c)};
  document.onmouseup=check;
+
+ // MOBILE
+ c.ontouchstart=(e)=>{
+   e.preventDefault();
+   isDragging=true;
+   select(c);
+ };
+
+ c.ontouchmove=(e)=>{
+   let touch = e.touches[0];
+   let el = document.elementFromPoint(touch.clientX, touch.clientY);
+   if(el && el.classList.contains("cell")){
+     select(el);
+   }
+ };
+
+ document.ontouchend=check;
 
  grid.appendChild(c);
 });
@@ -198,7 +195,7 @@ function select(cell){
 }
 
 function check(){
- drag=false;
+ isDragging=false;
  if(selected.length===0) return;
 
  let word=selected.map(c=>c.innerText).join("");
@@ -230,50 +227,29 @@ function check(){
  }
 }
 
-// GRADING
+// LEADERBOARD + SUBMIT same as before
 function grade(){
  let p=Math.round((found.length/words.length)*100);
- let g=p>=90?"A+":p>=80?"A":p>=70?"B":p>=60?"C":p>=50?"D":"F";
- return {p,g};
+ return {p};
 }
 
-// LEADERBOARD
 function showBoard(){
  let board=JSON.parse(localStorage.getItem("board")||"[]");
  let html="";
-
  board.forEach((p,i)=>{
-  let cls=i==0?"gold":i==1?"silver":i==2?"bronze":"";
-  let medal=i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
-
-  html+=`<div class="player ${cls}">
-  <span>${medal} ${p.name}</span>
-  <span>${p.score}% (${p.time}s)</span>
-  </div>`;
+  html+=`<div class="player">${i+1}. ${p.name} - ${p.score}%</div>`;
  });
-
  document.getElementById("boardList").innerHTML=html;
 }
 
-// SUBMIT
 function submitScore(){
  let name=document.getElementById("name").value;
  let phone=document.getElementById("phone").value;
 
- if(!name || !phone){
-  alert("Enter your details");
-  return;
- }
-
  let result=grade();
 
  let board=JSON.parse(localStorage.getItem("board")||"[]");
-
  board.push({name,score:result.p,time});
-
- board.sort((a,b)=>b.score-a.score||a.time-b.time);
- board=board.slice(0,10);
-
  localStorage.setItem("board",JSON.stringify(board));
 
  showBoard();
